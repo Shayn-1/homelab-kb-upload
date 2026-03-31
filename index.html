@@ -7,13 +7,7 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            brand: { DEFAULT: "#6366f1", hover: "#4f46e5" }
-          }
-        }
-      }
+      theme: { extend: { colors: { brand: { DEFAULT: "#6366f1", hover: "#4f46e5" } } } }
     }
   </script>
 </head>
@@ -34,15 +28,22 @@
       <!-- Progetto + Data -->
       <div class="grid grid-cols-2 gap-3">
         <div>
-          <label for="project" class="block text-sm text-gray-400 mb-1">
+          <label class="block text-sm text-gray-400 mb-1">
             Progetto <span class="text-indigo-400">*</span>
           </label>
-          <input
-            type="text"
-            id="project"
-            placeholder="es. ClienteABC"
-            class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
-          />
+          <div class="flex gap-2">
+            <select
+              id="project"
+              class="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition"
+            >
+              <option value="">Caricamento...</option>
+            </select>
+            <button
+              onclick="openNewProject()"
+              title="Nuovo progetto"
+              class="shrink-0 bg-gray-700 hover:bg-gray-600 border border-gray-700 text-gray-300 px-3 py-2 rounded-lg text-sm transition"
+            >+</button>
+          </div>
         </div>
         <div>
           <label for="date" class="block text-sm text-gray-400 mb-1">
@@ -51,7 +52,7 @@
           <input
             type="date"
             id="date"
-            class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition [color-scheme:dark]"
+            class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition [color-scheme:dark]"
           />
         </div>
       </div>
@@ -65,14 +66,14 @@
           type="text"
           id="title"
           placeholder="es. kickoff, revisione-sprint-3, demo-cliente"
-          class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
+          class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition"
         />
       </div>
 
       <!-- Testo -->
       <div>
         <div class="flex items-center justify-between mb-1">
-          <label for="text" class="block text-sm text-gray-400">
+          <label class="block text-sm text-gray-400">
             Trascrizione <span class="text-indigo-400">*</span>
           </label>
           <div class="flex items-center gap-2">
@@ -80,14 +81,12 @@
             <button
               onclick="document.getElementById('fileInput').click()"
               class="text-xs bg-gray-700 hover:bg-gray-600 border border-gray-600 text-gray-300 px-2 py-1 rounded transition"
-            >
-              Carica .txt / .vtt
-            </button>
+            >Carica .txt / .vtt</button>
           </div>
         </div>
         <input type="file" id="fileInput" accept=".txt,.vtt" class="hidden" onchange="loadFile(event)" />
         <div id="fileTag" class="hidden mb-2 flex items-center gap-2">
-          <span class="text-xs bg-indigo-900/50 text-indigo-300 border border-indigo-800 px-2 py-0.5 rounded-full" id="fileTagLabel"></span>
+          <span id="fileTagLabel" class="text-xs bg-indigo-900/50 text-indigo-300 border border-indigo-800 px-2 py-0.5 rounded-full"></span>
           <button onclick="clearFile()" class="text-xs text-gray-500 hover:text-gray-300 transition">✕</button>
         </div>
         <textarea
@@ -95,7 +94,7 @@
           rows="14"
           placeholder="Incolla qui la trascrizione della call..."
           oninput="updateCharCount()"
-          class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm font-mono resize-y focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition leading-relaxed"
+          class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm font-mono resize-y focus:outline-none focus:ring-2 focus:ring-indigo-500 transition leading-relaxed"
         ></textarea>
       </div>
 
@@ -104,25 +103,126 @@
         id="submitBtn"
         onclick="submitUpload()"
         class="w-full bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-2.5 rounded-lg transition-colors text-sm"
-      >
-        Invia alla Knowledge Base
-      </button>
+      >Invia alla Knowledge Base</button>
 
-      <!-- Status -->
       <div id="status" class="hidden text-sm p-3 rounded-lg border"></div>
     </div>
 
-    <!-- Footer -->
     <p class="text-center text-xs text-gray-700">
       Il file verrà processato da Gemini e aggiunto al vault Obsidian automaticamente.
     </p>
+  </div>
 
+  <!-- Modal nuovo progetto -->
+  <div id="modal" class="hidden fixed inset-0 bg-black/60 flex items-center justify-center z-50 px-4">
+    <div class="bg-gray-900 border border-gray-700 rounded-xl p-6 w-full max-w-sm space-y-4">
+      <h3 class="text-base font-semibold text-gray-100">Nuovo progetto</h3>
+      <input
+        type="text"
+        id="newProjectName"
+        placeholder="es. ClienteABC"
+        class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition"
+        onkeydown="if(event.key==='Enter') confirmNewProject()"
+      />
+      <p id="modalError" class="hidden text-xs text-red-400"></p>
+      <div class="flex gap-2 justify-end">
+        <button onclick="closeModal()" class="text-sm text-gray-400 hover:text-gray-200 px-4 py-2 rounded-lg transition">Annulla</button>
+        <button
+          id="modalConfirm"
+          onclick="confirmNewProject()"
+          class="text-sm bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-lg transition"
+        >Crea</button>
+      </div>
+    </div>
   </div>
 
   <script>
-    const API_URL = "https://kb-upload.distorsky.com/api/upload";
+    const API_BASE = "https://kb-upload.distorsky.com";
+
+    // ── Init ────────────────────────────────────────────────────────────────────
 
     document.getElementById("date").value = new Date().toISOString().split("T")[0];
+    loadProjects();
+
+    async function loadProjects() {
+      const sel = document.getElementById("project");
+      try {
+        const resp = await fetch(`${API_BASE}/api/projects`);
+        const data = await resp.json();
+        if (!resp.ok) throw new Error(data.error);
+        populateProjects(data.projects);
+      } catch (err) {
+        sel.innerHTML = '<option value="">Errore caricamento progetti</option>';
+      }
+    }
+
+    function populateProjects(projects) {
+      const sel = document.getElementById("project");
+      const current = sel.value;
+      sel.innerHTML = '<option value="">— seleziona progetto —</option>';
+      projects.forEach(p => {
+        const opt = document.createElement("option");
+        opt.value = p;
+        opt.textContent = p.replace(/-/g, " ");
+        sel.appendChild(opt);
+      });
+      if (current && projects.includes(current)) sel.value = current;
+    }
+
+    // ── Nuovo progetto ──────────────────────────────────────────────────────────
+
+    function openNewProject() {
+      document.getElementById("newProjectName").value = "";
+      document.getElementById("modalError").classList.add("hidden");
+      document.getElementById("modal").classList.remove("hidden");
+      setTimeout(() => document.getElementById("newProjectName").focus(), 50);
+    }
+
+    function closeModal() {
+      document.getElementById("modal").classList.add("hidden");
+    }
+
+    async function confirmNewProject() {
+      const name = document.getElementById("newProjectName").value.trim();
+      if (!name) return;
+
+      const btn = document.getElementById("modalConfirm");
+      const errEl = document.getElementById("modalError");
+      btn.disabled = true;
+      btn.textContent = "Creazione...";
+      errEl.classList.add("hidden");
+
+      try {
+        const resp = await fetch(`${API_BASE}/api/projects`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name }),
+        });
+        const data = await resp.json();
+        if (!resp.ok) throw new Error(data.error);
+
+        // Ricarica lista e seleziona il nuovo
+        const newKey = data.project;
+        const listResp = await fetch(`${API_BASE}/api/projects`);
+        const listData = await listResp.json();
+        populateProjects(listData.projects);
+        document.getElementById("project").value = newKey;
+        closeModal();
+      } catch (err) {
+        errEl.textContent = err.message;
+        errEl.classList.remove("hidden");
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "Crea";
+      }
+    }
+
+    // Chiudi modal cliccando fuori
+    document.getElementById("modal").addEventListener("click", function(e) {
+      if (e.target === this) closeModal();
+    });
+
+    // ── File / testo ────────────────────────────────────────────────────────────
 
     function updateCharCount() {
       const len = document.getElementById("text").value.length;
@@ -150,13 +250,14 @@
       updateCharCount();
     }
 
+    // ── Upload ──────────────────────────────────────────────────────────────────
+
     function showStatus(msg, type) {
       const el = document.getElementById("status");
       const isOk = type === "ok";
       el.className = `text-sm p-3 rounded-lg border ${
-        isOk
-          ? "bg-green-900/30 text-green-300 border-green-800"
-          : "bg-red-900/30 text-red-300 border-red-800"
+        isOk ? "bg-green-900/30 text-green-300 border-green-800"
+              : "bg-red-900/30 text-red-300 border-red-800"
       }`;
       el.textContent = msg;
       el.classList.remove("hidden");
@@ -169,7 +270,7 @@
       const title   = document.getElementById("title").value.trim();
       const text    = document.getElementById("text").value.trim();
 
-      if (!project) return showStatus("Il campo Progetto è obbligatorio.", "error");
+      if (!project) return showStatus("Seleziona un progetto.", "error");
       if (!title)   return showStatus("Il campo Titolo è obbligatorio.", "error");
       if (!text)    return showStatus("Incolla o carica una trascrizione.", "error");
 
@@ -178,14 +279,12 @@
       btn.textContent = "Invio in corso...";
 
       try {
-        const resp = await fetch(API_URL, {
+        const resp = await fetch(`${API_BASE}/api/upload`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ project, date, title, text }),
         });
-
         const data = await resp.json();
-
         if (resp.ok) {
           showStatus(`✓ ${data.message} (${data.filename})`, "ok");
           document.getElementById("text").value = "";
