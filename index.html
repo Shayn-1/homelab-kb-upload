@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>KB Upload — Trascrizioni</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: { DEFAULT: "#6366f1", hover: "#4f46e5" }
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="bg-gray-950 text-gray-100 min-h-screen flex flex-col items-center justify-start py-12 px-4">
+
+  <div class="w-full max-w-2xl space-y-6">
+
+    <!-- Header -->
+    <div>
+      <h1 class="text-2xl font-bold text-indigo-400 tracking-tight">Knowledge Base Upload</h1>
+      <p class="text-sm text-gray-500 mt-1">Carica una trascrizione — verrà riassunta e aggiunta al vault Obsidian.</p>
+    </div>
+
+    <!-- Form -->
+    <div class="bg-gray-900 border border-gray-800 rounded-xl p-4 space-y-4">
+      <h2 class="text-xs font-semibold text-gray-500 uppercase tracking-widest">Trascrizione</h2>
+
+      <!-- Progetto + Data -->
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label for="project" class="block text-sm text-gray-400 mb-1">
+            Progetto <span class="text-indigo-400">*</span>
+          </label>
+          <input
+            type="text"
+            id="project"
+            placeholder="es. ClienteABC"
+            class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
+          />
+        </div>
+        <div>
+          <label for="date" class="block text-sm text-gray-400 mb-1">
+            Data <span class="text-indigo-400">*</span>
+          </label>
+          <input
+            type="date"
+            id="date"
+            class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition [color-scheme:dark]"
+          />
+        </div>
+      </div>
+
+      <!-- Titolo -->
+      <div>
+        <label for="title" class="block text-sm text-gray-400 mb-1">
+          Titolo sessione <span class="text-indigo-400">*</span>
+        </label>
+        <input
+          type="text"
+          id="title"
+          placeholder="es. kickoff, revisione-sprint-3, demo-cliente"
+          class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition"
+        />
+      </div>
+
+      <!-- Testo -->
+      <div>
+        <div class="flex items-center justify-between mb-1">
+          <label for="text" class="block text-sm text-gray-400">
+            Trascrizione <span class="text-indigo-400">*</span>
+          </label>
+          <div class="flex items-center gap-2">
+            <span id="charCount" class="text-xs text-gray-600">0 caratteri</span>
+            <button
+              onclick="document.getElementById('fileInput').click()"
+              class="text-xs bg-gray-700 hover:bg-gray-600 border border-gray-600 text-gray-300 px-2 py-1 rounded transition"
+            >
+              Carica .txt / .vtt
+            </button>
+          </div>
+        </div>
+        <input type="file" id="fileInput" accept=".txt,.vtt" class="hidden" onchange="loadFile(event)" />
+        <div id="fileTag" class="hidden mb-2 flex items-center gap-2">
+          <span class="text-xs bg-indigo-900/50 text-indigo-300 border border-indigo-800 px-2 py-0.5 rounded-full" id="fileTagLabel"></span>
+          <button onclick="clearFile()" class="text-xs text-gray-500 hover:text-gray-300 transition">✕</button>
+        </div>
+        <textarea
+          id="text"
+          rows="14"
+          placeholder="Incolla qui la trascrizione della call..."
+          oninput="updateCharCount()"
+          class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm font-mono resize-y focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition leading-relaxed"
+        ></textarea>
+      </div>
+
+      <!-- Submit -->
+      <button
+        id="submitBtn"
+        onclick="submitUpload()"
+        class="w-full bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-2.5 rounded-lg transition-colors text-sm"
+      >
+        Invia alla Knowledge Base
+      </button>
+
+      <!-- Status -->
+      <div id="status" class="hidden text-sm p-3 rounded-lg border"></div>
+    </div>
+
+    <!-- Footer -->
+    <p class="text-center text-xs text-gray-700">
+      Il file verrà processato da Gemini e aggiunto al vault Obsidian automaticamente.
+    </p>
+
+  </div>
+
+  <script>
+    const API_URL = "https://kb-upload.distorsky.com/api/upload";
+
+    document.getElementById("date").value = new Date().toISOString().split("T")[0];
+
+    function updateCharCount() {
+      const len = document.getElementById("text").value.length;
+      document.getElementById("charCount").textContent =
+        len > 0 ? `${len.toLocaleString("it")} caratteri` : "0 caratteri";
+    }
+
+    function loadFile(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        document.getElementById("text").value = e.target.result;
+        updateCharCount();
+      };
+      reader.readAsText(file, "UTF-8");
+      document.getElementById("fileTagLabel").textContent = file.name;
+      document.getElementById("fileTag").classList.remove("hidden");
+    }
+
+    function clearFile() {
+      document.getElementById("fileInput").value = "";
+      document.getElementById("text").value = "";
+      document.getElementById("fileTag").classList.add("hidden");
+      updateCharCount();
+    }
+
+    function showStatus(msg, type) {
+      const el = document.getElementById("status");
+      const isOk = type === "ok";
+      el.className = `text-sm p-3 rounded-lg border ${
+        isOk
+          ? "bg-green-900/30 text-green-300 border-green-800"
+          : "bg-red-900/30 text-red-300 border-red-800"
+      }`;
+      el.textContent = msg;
+      el.classList.remove("hidden");
+      el.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
+
+    async function submitUpload() {
+      const project = document.getElementById("project").value.trim();
+      const date    = document.getElementById("date").value.trim();
+      const title   = document.getElementById("title").value.trim();
+      const text    = document.getElementById("text").value.trim();
+
+      if (!project) return showStatus("Il campo Progetto è obbligatorio.", "error");
+      if (!title)   return showStatus("Il campo Titolo è obbligatorio.", "error");
+      if (!text)    return showStatus("Incolla o carica una trascrizione.", "error");
+
+      const btn = document.getElementById("submitBtn");
+      btn.disabled = true;
+      btn.textContent = "Invio in corso...";
+
+      try {
+        const resp = await fetch(API_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ project, date, title, text }),
+        });
+
+        const data = await resp.json();
+
+        if (resp.ok) {
+          showStatus(`✓ ${data.message} (${data.filename})`, "ok");
+          document.getElementById("text").value = "";
+          document.getElementById("title").value = "";
+          document.getElementById("fileTag").classList.add("hidden");
+          document.getElementById("fileInput").value = "";
+          updateCharCount();
+        } else {
+          showStatus(`Errore: ${data.error}`, "error");
+        }
+      } catch (err) {
+        showStatus(`Errore di rete: ${err.message}`, "error");
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "Invia alla Knowledge Base";
+      }
+    }
+  </script>
+</body>
+</html>
